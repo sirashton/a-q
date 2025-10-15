@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Apply Zilla Slab as the primary font */
+body {
+  font-family: 'Zilla Slab', serif;
+}
+
+/* Define custom colors for Tailwind CSS v4 */
+@theme {
+  --color-primary-50: #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #B33062;
+  --color-primary-700: #9d1b4f;
+  --color-primary-800: #831843;
+  --color-primary-900: #701a75;
+  
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+  
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-soft-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom component patterns for consistent styling */
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-200 hover:bg-secondary-300 text-secondary-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl p-6 border border-secondary-200;
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .card-elevated {
+    @apply bg-white rounded-xl p-6 border border-secondary-200;
+    box-shadow: var(--shadow-soft-lg);
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .text-heading {
+    @apply text-secondary-900 font-semibold;
+  }
+  
+  .text-body {
+    @apply text-secondary-700 leading-relaxed;
+  }
+}
