@@ -6,6 +6,8 @@ import { safeAreaService } from './services/safeAreaService';
 import Home from './pages/Home';
 import List from './pages/List';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import AccountDeletion from './pages/AccountDeletion';
 import CountrySelector from './components/CountrySelector';
 import { UserPreferences } from './services/storageService';
 import { App as CapacitorApp } from "@capacitor/app";
@@ -84,6 +86,8 @@ function App() {
           <Route path="/" element={<Home preferences={preferences!} />} />
           <Route path="/list" element={<List preferences={preferences!} />} />
           <Route path="/settings" element={<Settings preferences={preferences!} onPreferencesUpdated={handlePreferencesUpdated} />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/account-deletion" element={<AccountDeletion />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

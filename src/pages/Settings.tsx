@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { UserPreferences, storageService } from '../services/storageService';
 import { adviceService } from '../services/adviceService';
 import BottomNav from '../components/BottomNav';
@@ -138,6 +139,27 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
                   </a>
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Legal Links */}
+          <div className={`${cardStyles.base}`}>
+            <h2 className={`${textStyles.heading} mb-4`}>
+              Legal
+            </h2>
+            <div className="space-y-3">
+              <Link 
+                to="/privacy" 
+                className="block text-primary-600 hover:text-primary-700 underline text-sm"
+              >
+                Privacy Policy
+              </Link>
+              <Link 
+                to="/account-deletion" 
+                className="block text-primary-600 hover:text-primary-700 underline text-sm"
+              >
+                Account Deletion Policy
+              </Link>
             </div>
           </div>
 
