@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserPreferences } from '../services/storageService';
 import { adviceService } from '../services/adviceService';
-import { Advice, AdviceSection } from '../services/adviceService';
+import { AdviceSection } from '../services/adviceService';
 import AdviceCard from '../components/AdviceCard';
 import BottomNav from '../components/BottomNav';
 import { textStyles, inputStyles } from '../styles/components';

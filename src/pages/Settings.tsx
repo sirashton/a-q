@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { UserPreferences, storageService } from '../services/storageService';
 import { adviceService } from '../services/adviceService';
 import BottomNav from '../components/BottomNav';
-import { textStyles, cardStyles, inputStyles } from '../styles/components';
+import NotificationSettingsComponent from '../components/NotificationSettings';
+import { textStyles, cardStyles } from '../styles/components';
 
 interface SettingsProps {
   preferences: UserPreferences;
@@ -36,31 +37,17 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
     }
   };
 
-  const handleNotificationsToggle = async (enabled: boolean) => {
-    const updatedPrefs = { ...localPreferences, notificationsEnabled: enabled };
-    setLocalPreferences(updatedPrefs);
-    
-    // Auto-save immediately
-    try {
-      await storageService.updatePreferences(updatedPrefs);
-      if (onPreferencesUpdated) {
-        onPreferencesUpdated(updatedPrefs);
-      }
-      setSaveMessage('Settings saved');
-      setTimeout(() => setSaveMessage(null), 2000);
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      setSaveMessage('Failed to save settings');
-      setTimeout(() => setSaveMessage(null), 3000);
-    }
-  };
 
-  const handleNotificationTimeChange = async (field: string, value: any) => {
+  const handleNotificationSettingsChange = async (settings: any) => {
     const updatedPrefs = {
       ...localPreferences,
+      notificationsEnabled: settings.enabled ?? localPreferences.notificationsEnabled,
       notificationTime: {
         ...localPreferences.notificationTime,
-        [field]: value
+        type: settings.timeType ?? localPreferences.notificationTime.type,
+        fixedTime: settings.fixedTime ?? localPreferences.notificationTime.fixedTime,
+        randomStart: settings.randomStart ?? localPreferences.notificationTime.randomStart,
+        randomEnd: settings.randomEnd ?? localPreferences.notificationTime.randomEnd,
       }
     };
     setLocalPreferences(updatedPrefs);
@@ -116,96 +103,10 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
 
           {/* Notifications */}
           <div className={`${cardStyles.base}`}>
-            <h2 className={`${textStyles.heading} mb-4`}>
-              Daily Notifications
-            </h2>
-            <p className={`${textStyles.body} text-secondary-600 mb-6`}>
-              Receive daily notifications with a randomly selected advice or query.
-            </p>
-            
-            <div className="space-y-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localPreferences.notificationsEnabled}
-                  onChange={(e) => handleNotificationsToggle(e.target.checked)}
-                  className="mr-3"
-                />
-                <span className={`${textStyles.body}`}>
-                  Enable daily notifications
-                </span>
-              </label>
-
-              {localPreferences.notificationsEnabled && (
-                <div className="ml-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
-                      Notification Time
-                    </label>
-                    <div className="space-y-3">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="notificationType"
-                          value="fixed"
-                          checked={localPreferences.notificationTime.type === 'fixed'}
-                          onChange={() => handleNotificationTimeChange('type', 'fixed')}
-                          className="mr-3"
-                        />
-                        <span className={`${textStyles.body}`}>Fixed time</span>
-                      </label>
-                      {localPreferences.notificationTime.type === 'fixed' && (
-                        <div className="ml-6">
-                          <input
-                            type="time"
-                            value={localPreferences.notificationTime.fixedTime || '08:00'}
-                            onChange={(e) => handleNotificationTimeChange('fixedTime', e.target.value)}
-                            className={`${inputStyles.base} w-32`}
-                          />
-                        </div>
-                      )}
-                      
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="notificationType"
-                          value="random"
-                          checked={localPreferences.notificationTime.type === 'random'}
-                          onChange={() => handleNotificationTimeChange('type', 'random')}
-                          className="mr-3"
-                        />
-                        <span className={`${textStyles.body}`}>Random time within range</span>
-                      </label>
-                      {localPreferences.notificationTime.type === 'random' && (
-                        <div className="ml-6 space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="time"
-                              value={localPreferences.notificationTime.randomRange?.start || '08:00'}
-                              onChange={(e) => handleNotificationTimeChange('randomRange', {
-                                ...localPreferences.notificationTime.randomRange,
-                                start: e.target.value
-                              })}
-                              className={`${inputStyles.base} w-32`}
-                            />
-                            <span className={`${textStyles.body}`}>to</span>
-                            <input
-                              type="time"
-                              value={localPreferences.notificationTime.randomRange?.end || '10:00'}
-                              onChange={(e) => handleNotificationTimeChange('randomRange', {
-                                ...localPreferences.notificationTime.randomRange,
-                                end: e.target.value
-                              })}
-                              className={`${inputStyles.base} w-32`}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationSettingsComponent
+              preferences={localPreferences}
+              onSettingsChange={handleNotificationSettingsChange}
+            />
           </div>
 
           {/* App Information */}

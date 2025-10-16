@@ -1,6 +1,6 @@
 import React from 'react';
 import { Advice } from '../services/adviceService';
-import { cardStyles, textStyles, buttonStyles } from '../styles/components';
+import { cardStyles, textStyles } from '../styles/components';
 
 interface AdviceCardProps {
   advice: Advice;

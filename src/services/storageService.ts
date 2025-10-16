@@ -6,21 +6,8 @@ export interface UserPreferences {
   notificationTime: {
     type: 'fixed' | 'random';
     fixedTime?: string; // HH:MM format
-    randomRange?: {
-      start: string; // HH:MM format
-      end: string; // HH:MM format
-    };
-    perDaySettings?: {
-      [key: string]: {
-        enabled: boolean;
-        type: 'fixed' | 'random';
-        fixedTime?: string;
-        randomRange?: {
-          start: string;
-          end: string;
-        };
-      };
-    };
+    randomStart?: string; // HH:MM format
+    randomEnd?: string; // HH:MM format
   };
   disabledAdvices: string[]; // Array of advice IDs that are disabled
   lastViewedDate: string; // YYYY-MM-DD format
@@ -152,7 +139,6 @@ export class StorageService {
   }
 
   public async isFirstLaunch(): Promise<boolean> {
-    const prefs = await this.getPreferences();
     // Check if this is truly the first launch (no country selected yet)
     // We'll use a special key to track if the user has completed the initial setup
     const { value } = await Preferences.get({ key: 'hasCompletedSetup' });

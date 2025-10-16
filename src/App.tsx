@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { storageService } from './services/storageService';
-import { adviceService } from './services/adviceService';
+import { notificationService } from './services/notificationService';
 import Home from './pages/Home';
 import List from './pages/List';
 import Settings from './pages/Settings';
@@ -17,6 +17,7 @@ function App() {
     const initializeApp = async () => {
       try {
         await storageService.initialize();
+        await notificationService.initialize();
         const prefs = await storageService.getPreferences();
         const firstLaunch = await storageService.isFirstLaunch();
         

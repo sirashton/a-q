@@ -182,6 +182,8 @@ describe('AdviceService', () => {
         disabledAdvices: ['A1', 'A2'],
         lastViewedDate: '',
         shownAdvices: ['A1', 'A3'],
+        timezone: 'Pacific/Auckland',
+        dailyAdvice: null,
       });
 
       const stats = await adviceService.getAdviceStats('nz');
