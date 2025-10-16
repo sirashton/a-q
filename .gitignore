@@ -14,6 +14,9 @@ android/
 ios/
 .capacitor/
 
+# Generated assets (keep source assets in assets/)
+resources/
+
 # Environment variables
 .env
 .env.local

@@ -1,0 +1,26 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @font-face {
+        font-family: 'Zilla Slab';
+        src: url('data:font/truetype;charset=utf-8;base64,AAEAAAAQAQAABAAAR1BPU3r0KHAAAIn4AACgwEdTVUJew1lnAAA5oAAAH2ZPUy8yTBlsAgAAAZAAAABgY21hcFid7qIAAAeoAAAGCmN2dCArFBmoAAAB8AAAAMxmcGdtTSSOfAAADbQAAA1tZ2FzcAAAABAAAAEMAAAACGdseWYIwCmrAAEquAACkVloZWFkFfHWwwAAAVgAAAA2aGhlYQ/fDwkAAAE0AAAAJGhtdHgE8oeHAAAbJAAADzxsb2Nh...') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+      }
+    </style>
+  </defs>
+  
+      <!-- Background square -->
+      <rect x="0" y="0" width="1024" height="1024" fill="#B33062"/>
+      
+      <!-- Text "a+q" -->
+      <text x="512" y="580" 
+            font-family="Zilla Slab, Georgia, 'Times New Roman', serif" 
+            font-size="380" 
+            font-weight="400" 
+            text-anchor="middle" 
+            fill="white"
+            letter-spacing="-0.02em">
+        a+q
+      </text>
+</svg>

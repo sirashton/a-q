@@ -15,10 +15,14 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:all": "npm run test:run && npm run test:e2e"
+    "test:all": "npm run test:run && npm run test:e2e",
+    "assets:generate": "npx @capacitor/assets generate",
+    "assets:copy": "@capacitor/assets copy",
+    "deploy:android": "npm run assets:generate && npm run build && npx cap sync && echo 1 | npx cap run android"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.3",
