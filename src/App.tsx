@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { storageService } from './services/storageService';
 import { notificationService } from './services/notificationService';
+import { safeAreaService } from './services/safeAreaService';
 import Home from './pages/Home';
 import List from './pages/List';
 import Settings from './pages/Settings';
@@ -18,6 +19,7 @@ function App() {
       try {
         await storageService.initialize();
         await notificationService.initialize();
+        await safeAreaService.initialize();
         const prefs = await storageService.getPreferences();
         const firstLaunch = await storageService.isFirstLaunch();
         
@@ -49,7 +51,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+      <div className="min-h-screen bg-secondary-50 flex items-center justify-center safe-area-all">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-secondary-600">Loading...</p>
@@ -64,7 +66,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-secondary-50">
+      <div className="min-h-screen bg-secondary-50 safe-area-all">
         <Routes>
           <Route path="/" element={<Home preferences={preferences!} />} />
           <Route path="/list" element={<List preferences={preferences!} />} />

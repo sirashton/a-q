@@ -29,6 +29,7 @@
     "@capacitor/preferences": "^7.0.2",
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/vite": "^4.1.14",
+    "capacitor-plugin-safe-area": "^4.0.0",
     "lucide-react": "^0.545.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -26,7 +26,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ onCountrySelected }) 
   };
 
   return (
-    <div className="min-h-screen bg-secondary-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-secondary-50 flex items-center justify-center p-4 safe-area-all">
       <div className={`${cardStyles.elevated} max-w-md w-full`}>
         <div className="text-center mb-8">
           <h1 className={`${textStyles.headingLarge} mb-4`}>
