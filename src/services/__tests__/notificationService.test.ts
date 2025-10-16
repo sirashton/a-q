@@ -84,6 +84,12 @@ describe('NotificationService', () => {
   describe('scheduleDailyNotifications', () => {
     it('should cancel notifications when disabled', async () => {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
+      
+      // Mock some pending notifications so cancelAllNotifications will actually call LocalNotifications.cancel
+      vi.mocked(LocalNotifications.getPending).mockResolvedValue({
+        notifications: [{ id: 1, title: 'Test', body: 'Test' }]
+      });
+      
       vi.mocked(storageService.getPreferences).mockResolvedValue({
         selectedCountry: 'nz',
         notificationsEnabled: false,
@@ -96,6 +102,7 @@ describe('NotificationService', () => {
       });
 
       await notificationService.scheduleDailyNotifications();
+      // When notifications are disabled, cancel should be called to clear existing notifications
       expect(LocalNotifications.cancel).toHaveBeenCalled();
     });
 
@@ -150,10 +157,17 @@ describe('NotificationService', () => {
     it('should cancel all notifications', async () => {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
       
-      await notificationService.cancelAllNotifications();
-      expect(LocalNotifications.cancel).toHaveBeenCalledWith({
-        notifications: []
+      // Mock getPendingNotifications to return some notifications
+      vi.mocked(LocalNotifications.getPending).mockResolvedValue({
+        notifications: [
+          { id: 1, title: 'Test', body: 'Test' },
+          { id: 2, title: 'Test2', body: 'Test2' }
+        ]
       });
+      
+      await notificationService.cancelAllNotifications();
+      // Should be called for each notification ID
+      expect(LocalNotifications.cancel).toHaveBeenCalledTimes(2);
     });
   });
 
