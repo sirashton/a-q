@@ -125,6 +125,19 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
                   {localPreferences?.selectedCountry ? adviceService.getCountryName(localPreferences.selectedCountry) : 'Loading...'}
                 </span>
               </div>
+              <div className="pt-2 border-t border-gray-200">
+                <p className={`${textStyles.body} text-secondary-600 text-sm`}>
+                  Given freely to the world by{' '}
+                  <a 
+                    href="https://www.linkedin.com/in/alex-e-ashton/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 underline font-medium"
+                  >
+                    Alex Ashton
+                  </a>
+                </p>
+              </div>
             </div>
           </div>
 
