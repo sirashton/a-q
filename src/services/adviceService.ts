@@ -3,8 +3,7 @@ import { storageService } from './storageService';
 
 export interface Advice {
   id: string;
-  text?: string;
-  query?: string;
+  query: string;
 }
 
 export interface AdviceSection {
@@ -23,6 +22,44 @@ export interface AdviceData {
     sections: AdviceSection[];
   };
 }
+
+/**
+ * Parse query text into sentences while preserving original order
+ * @param query - The query text to parse
+ * @returns Array of sentence objects with type and content
+ */
+export function parseQuery(query: string): { type: 'text' | 'question'; content: string }[] {
+  if (!query) {
+    return [];
+  }
+
+  const sentences: { type: 'text' | 'question'; content: string }[] = [];
+  
+  // Split on both "." and "?" to preserve order
+  const parts = query.split(/([.?])/);
+  let currentSentence = '';
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    
+    if (part === '.' || part === '?') {
+      currentSentence = currentSentence.trim();
+      if (currentSentence) {
+        if (part === '?') {
+          sentences.push({ type: 'question', content: currentSentence + '?' });
+        } else {
+          sentences.push({ type: 'text', content: currentSentence + '.' });
+        }
+      }
+      currentSentence = '';
+    } else {
+      currentSentence += part;
+    }
+  }
+  
+  return sentences;
+}
+
 
 export class AdviceService {
   private static instance: AdviceService;
@@ -142,8 +179,7 @@ export class AdviceService {
     const searchTerm = query.toLowerCase();
     
     return allAdvices.filter(advice => 
-      (advice.text && advice.text.toLowerCase().includes(searchTerm)) ||
-      (advice.query && advice.query.toLowerCase().includes(searchTerm))
+      advice.query && advice.query.toLowerCase().includes(searchTerm)
     );
   }
 

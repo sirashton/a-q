@@ -113,7 +113,7 @@ describe('NotificationService', () => {
       });
       vi.mocked(adviceService.getDailyAdvice).mockResolvedValue({
         id: 'A1',
-        text: 'Test advice',
+        query: 'Test advice',
       });
 
       await notificationService.scheduleDailyNotifications();
@@ -138,7 +138,7 @@ describe('NotificationService', () => {
       });
       vi.mocked(adviceService.getDailyAdvice).mockResolvedValue({
         id: 'A1',
-        text: 'Test advice',
+        query: 'Test advice',
       });
 
       await notificationService.scheduleDailyNotifications();
@@ -191,7 +191,7 @@ describe('NotificationService', () => {
       });
       vi.mocked(adviceService.getDailyAdvice).mockResolvedValue({
         id: 'A1',
-        text: 'Test advice',
+        query: 'Test advice',
       });
 
       await notificationService.updateNotificationSettings(mockSettings);

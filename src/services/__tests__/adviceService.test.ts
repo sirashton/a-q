@@ -144,12 +144,11 @@ describe('AdviceService', () => {
   });
 
   describe('searchAdvices', () => {
-    it('should find advices by text content', async () => {
+    it('should find advices by query content', async () => {
       const results = await adviceService.searchAdvices('love', 'nz');
       expect(results).toBeDefined();
       expect(results.length).toBeGreaterThan(0);
       expect(results.some(advice => 
-        advice.text?.toLowerCase().includes('love') || 
         advice.query?.toLowerCase().includes('love')
       )).toBe(true);
     });

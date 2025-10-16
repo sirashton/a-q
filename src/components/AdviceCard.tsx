@@ -1,5 +1,5 @@
 import React from 'react';
-import { Advice } from '../services/adviceService';
+import { Advice, parseQuery } from '../services/adviceService';
 import { cardStyles, textStyles } from '../styles/components';
 
 interface AdviceCardProps {
@@ -23,6 +23,9 @@ const AdviceCard: React.FC<AdviceCardProps> = ({
     }
   };
 
+  // Parse the query into sentences while preserving original order
+  const sentences = parseQuery(advice.query);
+
   return (
     <div className={`${cardStyles.base} ${className} ${isDisabled ? 'opacity-60' : ''}`} data-testid="advice-card">
       <div className="flex justify-between items-start mb-4">
@@ -43,19 +46,24 @@ const AdviceCard: React.FC<AdviceCardProps> = ({
         )}
       </div>
 
-      {advice.text && (
+      {/* Render sentences in original order */}
+      {sentences.length > 0 && (
         <div className="mb-4">
-          <p className={`${textStyles.body} leading-relaxed`}>
-            {advice.text}
-          </p>
-        </div>
-      )}
-
-      {advice.query && (
-        <div className="border-l-4 border-primary-200 pl-4">
-          <p className={`${textStyles.body} font-medium text-primary-800 italic`}>
-            {advice.query}
-          </p>
+          {sentences.map((sentence, index) => (
+            <div key={index} className="mb-2">
+              {sentence.type === 'question' ? (
+                <div className="border-l-4 border-primary-200 pl-4">
+                  <p className={`${textStyles.body} font-medium text-primary-800 italic`}>
+                    {sentence.content}
+                  </p>
+                </div>
+              ) : (
+                <p className={`${textStyles.body} leading-relaxed`}>
+                  {sentence.content}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
