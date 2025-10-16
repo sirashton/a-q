@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
       smallIcon: "ic_stat_icon_config_sample",
       iconColor: "#B33062",
       sound: "beep.wav"
+    },
+    LiveUpdate: {
+      appId: '58f13a06-ae85-4441-a884-6852ae61bec3',
     }
   }
 };

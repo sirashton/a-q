@@ -8,6 +8,8 @@ import List from './pages/List';
 import Settings from './pages/Settings';
 import CountrySelector from './components/CountrySelector';
 import { UserPreferences } from './services/storageService';
+import { App as CapacitorApp } from "@capacitor/app";
+import { LiveUpdate } from "@capawesome/capacitor-live-update";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +38,17 @@ function App() {
     };
 
     initializeApp();
+
+    CapacitorApp.addListener("resume", async () => {
+      const { nextBundleId } = await LiveUpdate.sync();
+      if (nextBundleId) {
+        // Ask the user if they want to apply the update immediately
+        const shouldReload = confirm("A new update is available. Would you like to install it?");
+        if (shouldReload) {
+          await LiveUpdate.reload();
+        }
+      }
+    });
   }, []);
 
   const handleCountrySelected = async (country: 'nz' | 'uk') => {

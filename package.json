@@ -22,11 +22,13 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.3",
     "@capacitor/preferences": "^7.0.2",
+    "@capawesome/capacitor-live-update": "^7.2.2",
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/vite": "^4.1.14",
     "capacitor-plugin-safe-area": "^4.0.0",
