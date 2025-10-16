@@ -23,6 +23,9 @@ function App() {
         
         setPreferences(prefs);
         setIsFirstLaunch(firstLaunch);
+        
+        // Check and top up notifications every time the app loads
+        await notificationService.checkAndTopUpNotifications();
       } catch (error) {
         console.error('Failed to initialize app:', error);
       } finally {

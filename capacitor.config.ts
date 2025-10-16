@@ -3,7 +3,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.a-q',
+  appId: 'app.a_q',
   appName: 'Advices and Queries',
   webDir: 'dist',
   server: {

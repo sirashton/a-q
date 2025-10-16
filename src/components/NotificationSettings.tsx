@@ -19,8 +19,7 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
     timeType: preferences.notificationTime.type,
     fixedTime: preferences.notificationTime.fixedTime || '08:00',
     randomStart: preferences.notificationTime.randomStart || '07:00',
-    randomEnd: preferences.notificationTime.randomEnd || '09:00',
-    daysOfWeek: [1, 2, 3, 4, 5, 6, 7] // All days by default
+    randomEnd: preferences.notificationTime.randomEnd || '09:00'
   });
 
   const [permissionStatus, setPermissionStatus] = useState<string>('checking');
@@ -92,6 +91,13 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
         if (settings.enabled && webNotificationService.getPermissionStatus() === 'granted') {
           // Import adviceService to get daily advice
           const { adviceService } = await import('../services/adviceService');
+          
+          // Check if we can get daily advice before scheduling
+          const dailyAdvice = await adviceService.getDailyAdvice();
+          if (!dailyAdvice) {
+            console.warn('No daily advice available, skipping notification scheduling');
+            return;
+          }
           
           await webNotificationService.scheduleDailyNotifications(
             {
@@ -280,13 +286,13 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
               </div>
             )}
 
-            {/* Test Notification Buttons (for web testing) */}
+            {/* Test Notification Buttons */}
             {permissionStatus === 'granted' && (
               <div className="pt-2 space-y-2">
                 <button
                   onClick={async () => {
                     try {
-                      console.log('Sending immediate test notification...');
+                      console.log('🧪 Sending immediate test notification...');
                       
                       if (Capacitor.getPlatform() === 'web') {
                         // Use web notification service
@@ -304,7 +310,7 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                         }
                         
                         await webNotificationService.sendTestNotification();
-                        console.log('Test notification sent successfully!');
+                        console.log('✅ Test notification sent successfully!');
                         alert('Test notification sent! Check for a browser notification.');
                       } else {
                         // Use Capacitor for native platforms
@@ -312,15 +318,15 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                         
                         // Check permissions first
                         const permissionStatus = await LocalNotifications.checkPermissions();
-                        console.log('Permission status:', permissionStatus);
+                        console.log('🔐 Permission status:', permissionStatus);
                         
                         if (permissionStatus.display !== 'granted') {
-                          console.log('Requesting permissions...');
+                          console.log('🔐 Requesting permissions...');
                           await LocalNotifications.requestPermissions();
                         }
                         
                         const scheduleTime = new Date(Date.now() + 2000);
-                        console.log('Scheduling notification for:', scheduleTime);
+                        console.log('⏰ Scheduling notification for:', scheduleTime);
                         
                         await LocalNotifications.schedule({
                           notifications: [{
@@ -331,11 +337,11 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                           }]
                         });
                         
-                        console.log('Test notification scheduled successfully!');
+                        console.log('✅ Test notification scheduled successfully!');
                         alert('Test notification scheduled! Check for a notification in 2 seconds.');
                       }
                     } catch (error) {
-                      console.error('Failed to send test notification:', error);
+                      console.error('❌ Failed to send test notification:', error);
                       alert('Failed to send test notification. Check console for details.');
                     }
                   }}
@@ -343,6 +349,57 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                 >
                   Send Immediate Test
                 </button>
+                
+              {notificationService.isDebugMode() && (
+                <>
+                  <button
+                    onClick={async () => {
+                      try {
+                        console.log('🧪 Testing notification service...');
+                        await notificationService.scheduleDailyNotifications();
+                        console.log('✅ Daily notifications test completed!');
+                        alert('Daily notifications test completed! Check console for details.');
+                      } catch (error) {
+                        console.error('❌ Failed to test daily notifications:', error);
+                        alert('Failed to test daily notifications. Check console for details.');
+                      }
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Test Daily Notifications
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      try {
+                        await notificationService.debugPendingNotifications();
+                        alert('Check console for pending notifications details');
+                      } catch (error) {
+                        console.error('❌ Failed to debug notifications:', error);
+                        alert('Failed to debug notifications. Check console for details.');
+                      }
+                    }}
+                    className="w-full bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  >
+                    Debug: Show Pending
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      try {
+                        await notificationService.debugForceReschedule();
+                        alert('Force rescheduled! Check console for details.');
+                      } catch (error) {
+                        console.error('❌ Failed to force reschedule:', error);
+                        alert('Failed to force reschedule. Check console for details.');
+                      }
+                    }}
+                    className="w-full bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                  >
+                    Debug: Force Reschedule
+                  </button>
+                </>
+              )}
                 
                 {Capacitor.getPlatform() === 'web' && (
                   <button

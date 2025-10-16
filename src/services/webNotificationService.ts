@@ -138,7 +138,7 @@ class WebNotificationService {
    */
   public async scheduleDailyNotifications(
     settings: WebNotificationSettings,
-    getDailyAdvice: () => Promise<{ id: string; text?: string; query?: string }>
+    getDailyAdvice: () => Promise<{ id: string; text?: string; query?: string } | null>
   ): Promise<void> {
     console.log('🔔 Web notification service: scheduleDailyNotifications called');
     console.log('Settings:', settings);
@@ -156,6 +156,11 @@ class WebNotificationService {
 
       // Get daily advice
       const dailyAdvice = await getDailyAdvice();
+      if (!dailyAdvice) {
+        console.log('❌ No daily advice available, cannot schedule notification');
+        return;
+      }
+      
       const notificationText = dailyAdvice.text || dailyAdvice.query || 'Daily reflection';
       console.log('📝 Daily advice text:', notificationText);
 

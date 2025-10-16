@@ -1,7 +1,6 @@
 import { LocalNotifications, PermissionStatus } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { storageService } from './storageService';
-import { adviceService } from './adviceService';
 
 export interface NotificationSettings {
   enabled: boolean;
@@ -9,7 +8,6 @@ export interface NotificationSettings {
   fixedTime: string; // HH:MM format
   randomStart: string; // HH:MM format
   randomEnd: string; // HH:MM format
-  daysOfWeek: number[]; // 1-7 (Sunday = 1)
 }
 
 export interface NotificationTime {
@@ -21,6 +19,15 @@ export interface NotificationTime {
 
 class NotificationService {
   private readonly CHANNEL_ID = 'daily-advice-channel';
+  private readonly NOTIFICATION_QUEUE_SIZE = 3; // Days of notifications to maintain
+  private readonly DEBUG_MODE = false; // Set to true to show debug buttons
+
+  /**
+   * Check if debug mode is enabled
+   */
+  public isDebugMode(): boolean {
+    return this.DEBUG_MODE;
+  }
 
   /**
    * Initialize the notification service
@@ -32,8 +39,65 @@ class NotificationService {
       
       // Check and request permissions
       await this.checkAndRequestPermissions();
+      
+      // Check if we need to top up the notification queue
+      await this.checkAndTopUpNotificationsInternal();
     } catch (error) {
       console.error('Failed to initialize notifications:', error);
+    }
+  }
+
+  /**
+   * Public method to check and top up notifications (called from App component)
+   */
+  public async checkAndTopUpNotifications(): Promise<void> {
+    await this.checkAndTopUpNotificationsInternal();
+  }
+
+  /**
+   * Check if we need to top up the notification queue
+   */
+  private async checkAndTopUpNotificationsInternal(): Promise<void> {
+    try {
+      const preferences = await storageService.getPreferences();
+      if (!preferences.notificationsEnabled || preferences.notificationTime.type !== 'random') {
+        return;
+      }
+
+      const pendingNotifications = await this.getPendingNotifications();
+      console.log(`📊 Pending notifications: ${pendingNotifications.length}`);
+
+      // Check if we have any warning notifications that need to be cleaned up
+      const hasWarningNotification = pendingNotifications.some(notif => 
+        notif.extra?.adviceId === 'warning'
+      );
+
+      // If we have a warning notification, it means the user hasn't opened the app
+      // and we should reschedule the full queue
+      if (hasWarningNotification) {
+        console.log('🧹 Cleaning up old notifications and rescheduling...');
+        await this.cancelAllNotifications();
+        await this.scheduleRandomNotifications(
+          preferences.notificationTime.randomStart!,
+          preferences.notificationTime.randomEnd!,
+          this.NOTIFICATION_QUEUE_SIZE
+        );
+        return;
+      }
+
+      // Always maintain exactly NOTIFICATION_QUEUE_SIZE days of notifications
+      if (pendingNotifications.length < this.NOTIFICATION_QUEUE_SIZE) {
+        const notificationsNeeded = this.NOTIFICATION_QUEUE_SIZE - pendingNotifications.length;
+        console.log(`🔄 Topping up notification queue with ${notificationsNeeded} more notifications...`);
+        
+        await this.scheduleRandomNotifications(
+          preferences.notificationTime.randomStart!,
+          preferences.notificationTime.randomEnd!,
+          notificationsNeeded
+        );
+      }
+    } catch (error) {
+      console.error('Failed to check and top up notifications:', error);
     }
   }
 
@@ -64,6 +128,23 @@ class NotificationService {
 
       if (permissionStatus.display === 'prompt' || permissionStatus.display === 'prompt-with-rationale') {
         const requestResult = await LocalNotifications.requestPermissions();
+        
+        // Check exact alarm settings for Android 12+ after requesting permissions
+        if (Capacitor.getPlatform() === 'android') {
+          try {
+            const exactAlarmStatus = await LocalNotifications.checkExactNotificationSetting();
+            console.log('Exact alarm setting:', exactAlarmStatus);
+            
+            if (!exactAlarmStatus.exact_alarm) {
+              console.warn('Exact alarms are disabled. Notifications may not be precise.');
+              // Optionally, you could prompt the user to enable exact alarms
+              // await LocalNotifications.changeExactNotificationSetting();
+            }
+          } catch (error) {
+            console.log('Could not check exact alarm setting:', error);
+          }
+        }
+        
         return requestResult;
       }
 
@@ -106,55 +187,47 @@ class NotificationService {
    */
   public async scheduleDailyNotifications(): Promise<void> {
     try {
+      console.log('🔔 Starting to schedule daily notifications...');
+      
       const preferences = await storageService.getPreferences();
+      console.log('📋 User preferences:', {
+        notificationsEnabled: preferences.notificationsEnabled,
+        notificationTime: preferences.notificationTime,
+        timezone: preferences.timezone
+      });
       
       if (!preferences.notificationsEnabled) {
+        console.log('❌ Notifications disabled by user');
         await this.cancelAllNotifications();
         return;
       }
 
       // Cancel existing notifications
       await this.cancelAllNotifications();
+      console.log('🧹 Cleared existing notifications');
 
       const notificationTime = preferences.notificationTime;
-      const timeSlots = this.calculateTimeSlots(notificationTime);
-
-      // Schedule notifications for each day of the week
-      for (const timeSlot of timeSlots) {
-        await this.scheduleNotification(timeSlot);
+      
+      if (notificationTime.type === 'fixed' && notificationTime.fixedTime) {
+        // Fixed time - schedule one notification that repeats daily
+        console.log(`⏰ Fixed notification time: ${notificationTime.fixedTime}`);
+        await this.scheduleNotification(notificationTime.fixedTime);
+      } else if (notificationTime.type === 'random' && notificationTime.randomStart && notificationTime.randomEnd) {
+        // Random time - pre-schedule NOTIFICATION_QUEUE_SIZE days worth of notifications
+        console.log(`🎲 Random notification times between ${notificationTime.randomStart} and ${notificationTime.randomEnd}`);
+        await this.scheduleRandomNotifications(notificationTime.randomStart, notificationTime.randomEnd, this.NOTIFICATION_QUEUE_SIZE);
+      } else {
+        console.log('❌ No valid notification time configured');
+        return;
       }
 
-      console.log('Daily notifications scheduled successfully');
+      console.log('✅ Daily notifications scheduled successfully');
     } catch (error) {
-      console.error('Failed to schedule notifications:', error);
+      console.error('❌ Failed to schedule notifications:', error);
       throw error;
     }
   }
 
-  /**
-   * Calculate time slots for notifications based on user preferences
-   */
-  private calculateTimeSlots(notificationTime: NotificationTime): Array<{ time: string; dayOfWeek: number }> {
-    const timeSlots: Array<{ time: string; dayOfWeek: number }> = [];
-    
-    // For now, schedule for all days of the week (1-7, Sunday = 1)
-    const daysOfWeek = [1, 2, 3, 4, 5, 6, 7];
-
-    if (notificationTime.type === 'fixed' && notificationTime.fixedTime) {
-      // Fixed time for all days
-      for (const day of daysOfWeek) {
-        timeSlots.push({ time: notificationTime.fixedTime, dayOfWeek: day });
-      }
-    } else if (notificationTime.type === 'random' && notificationTime.randomStart && notificationTime.randomEnd) {
-      // Random time for each day
-      for (const day of daysOfWeek) {
-        const randomTime = this.generateRandomTime(notificationTime.randomStart, notificationTime.randomEnd);
-        timeSlots.push({ time: randomTime, dayOfWeek: day });
-      }
-    }
-
-    return timeSlots;
-  }
 
   /**
    * Generate a random time between start and end times
@@ -189,78 +262,147 @@ class NotificationService {
   }
 
   /**
+   * Schedule multiple random notifications for the next N days
+   */
+  private async scheduleRandomNotifications(startTime: string, endTime: string, days: number): Promise<void> {
+    try {
+      console.log(`📅 Scheduling ${days} random notifications...`);
+      
+      const notifications = [];
+      
+      for (let i = 0; i < days; i++) {
+        const randomTime = this.generateRandomTime(startTime, endTime);
+        const [hours, minutes] = randomTime.split(':').map(Number);
+        
+        // Calculate the date for this notification (starting from tomorrow)
+        const notificationDate = new Date();
+        notificationDate.setDate(notificationDate.getDate() + i + 1);
+        notificationDate.setHours(hours, minutes, 0, 0);
+        
+        const notificationId = parseInt(`${i + 1}${hours}${minutes}`); // Unique ID for each day
+        
+        notifications.push({
+          id: notificationId,
+          title: 'Daily Advice & Query',
+          body: 'Time for stillness? Open the app to see today\'s a+q',
+          schedule: {
+            at: notificationDate,
+            repeats: false
+          },
+          sound: 'default',
+          attachments: undefined,
+          actionTypeId: '',
+          extra: {
+            adviceId: 'daily'
+          }
+        });
+      }
+      
+      // Add a warning notification at the end of the queue
+      const warningDate = new Date();
+      warningDate.setDate(warningDate.getDate() + days + 1);
+      warningDate.setHours(9, 0, 0, 0); // 9 AM warning
+      
+      const warningId = parseInt(`999${warningDate.getHours()}${warningDate.getMinutes()}`);
+      notifications.push({
+        id: warningId,
+        title: 'Advices & Queries',
+        body: 'You haven\'t been opening these notifications. We\'re pausing them - open the app to re-enable daily reflections.',
+        schedule: {
+          at: warningDate,
+          repeats: false
+        },
+        sound: 'default',
+        attachments: undefined,
+        actionTypeId: '',
+        extra: {
+          adviceId: 'warning'
+        }
+      });
+      
+      // Schedule all notifications at once
+      await LocalNotifications.schedule({
+        notifications: notifications
+      });
+      
+      console.log(`✅ Successfully scheduled ${days} random notifications + 1 warning notification`);
+    } catch (error) {
+      console.error('Failed to schedule random notifications:', error);
+    }
+  }
+
+  /**
    * Schedule a single notification
    */
-  private async scheduleNotification(timeSlot: { time: string; dayOfWeek: number }): Promise<void> {
+  private async scheduleNotification(targetTime: string): Promise<void> {
     try {
-      const [hours, minutes] = timeSlot.time.split(':').map(Number);
+      console.log(`🔧 Processing target time: ${targetTime}`);
       
-      // Get the next occurrence of this day and time
-      const scheduleDate = this.getNextOccurrence(timeSlot.dayOfWeek, hours, minutes);
+      const [hours, minutes] = targetTime.split(':').map(Number);
+      console.log(`⏰ Parsed time: ${hours}:${minutes}`);
+      
+      // Get the next occurrence of this time
+      const scheduleDate = this.getNextOccurrence(hours, minutes);
+      console.log(`📅 Calculated schedule date:`, scheduleDate);
       
       if (!scheduleDate) {
-        console.warn(`Could not schedule notification for day ${timeSlot.dayOfWeek} at ${timeSlot.time}`);
+        console.warn(`❌ Could not schedule notification for ${targetTime}`);
         return;
       }
 
-      // Get the daily advice for the notification
-      const dailyAdvice = await adviceService.getDailyAdvice();
+      // Use a generic message since we can't dynamically update content when app is closed
+      const notificationId = parseInt(`${hours}${minutes}`);
+      const notificationBody = 'Time for stillness? Open the app to see today\'s a+q';
       
-      if (!dailyAdvice) {
-        console.warn('No daily advice available for notification');
-        return;
-      }
+      console.log(`📤 Scheduling notification with ID ${notificationId}:`, {
+        title: 'Daily Advice & Query',
+        body: notificationBody,
+        scheduleDate: scheduleDate,
+        repeats: true,
+        every: 'day'
+      });
       
       await LocalNotifications.schedule({
         notifications: [
           {
-            id: parseInt(`${timeSlot.dayOfWeek}${hours}${minutes}`), // Unique ID based on day and time
+            id: notificationId,
             title: 'Daily Advice & Query',
-            body: dailyAdvice.text || dailyAdvice.query || 'Daily reflection',
+            body: notificationBody,
             schedule: {
               at: scheduleDate,
               repeats: true,
-              every: 'week'
+              every: 'day'
             },
             sound: 'default',
             attachments: undefined,
             actionTypeId: '',
             extra: {
-              adviceId: dailyAdvice.id
+              adviceId: 'daily'
             }
           }
         ]
       });
+      
+      console.log(`✅ Successfully scheduled notification ID ${notificationId}`);
     } catch (error) {
       console.error('Failed to schedule notification:', error);
     }
   }
 
   /**
-   * Get the next occurrence of a specific day and time
+   * Get the next occurrence of a specific time
    */
-  private getNextOccurrence(dayOfWeek: number, hours: number, minutes: number): Date | null {
+  private getNextOccurrence(hours: number, minutes: number): Date | null {
     const now = new Date();
     const targetDate = new Date();
     
     // Set the target time
     targetDate.setHours(hours, minutes, 0, 0);
     
-    // Calculate days until the target day of week
-    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const targetDay = dayOfWeek === 7 ? 0 : dayOfWeek; // Convert Sunday from 7 to 0
-    
-    let daysUntilTarget = targetDay - currentDay;
-    if (daysUntilTarget <= 0) {
-      daysUntilTarget += 7; // Next week
+    // If the time has already passed today, schedule for tomorrow
+    if (targetDate <= now) {
+      targetDate.setDate(targetDate.getDate() + 1);
     }
-    
-    // If it's the same day but time has passed, schedule for next week
-    if (daysUntilTarget === 7 && targetDate <= now) {
-      daysUntilTarget = 7;
-    }
-    
-    targetDate.setDate(now.getDate() + daysUntilTarget);
     
     return targetDate;
   }
@@ -270,10 +412,25 @@ class NotificationService {
    */
   public async cancelAllNotifications(): Promise<void> {
     try {
-      await LocalNotifications.cancel({
-        notifications: []
-      });
-      console.log('All notifications cancelled');
+      // Get all pending notifications first
+      const pendingNotifications = await this.getPendingNotifications();
+      const notificationIds = pendingNotifications.map(notif => notif.id);
+      
+      if (notificationIds.length > 0) {
+        // Cancel notifications one by one to avoid the type casting issue
+        for (const id of notificationIds) {
+          try {
+            await LocalNotifications.cancel({
+              notifications: [{ id }]
+            });
+          } catch (error) {
+            console.warn(`Failed to cancel notification ${id}:`, error);
+          }
+        }
+        console.log(`🧹 Cancelled ${notificationIds.length} notifications`);
+      } else {
+        console.log('🧹 No notifications to cancel');
+      }
     } catch (error) {
       console.error('Failed to cancel notifications:', error);
     }
@@ -289,6 +446,47 @@ class NotificationService {
     } catch (error) {
       console.error('Failed to get pending notifications:', error);
       return [];
+    }
+  }
+
+  /**
+   * Debug method to see all scheduled notifications
+   */
+  public async debugPendingNotifications(): Promise<void> {
+    try {
+      const pending = await this.getPendingNotifications();
+      console.log(`📊 Total pending notifications: ${pending.length}`);
+      
+      pending.forEach((notif, index) => {
+        const scheduleDate = new Date(notif.schedule.at);
+        const isWarning = notif.extra?.adviceId === 'warning';
+        console.log(`${index + 1}. ID: ${notif.id}, Date: ${scheduleDate.toLocaleString()}, Warning: ${isWarning}`);
+      });
+    } catch (error) {
+      console.error('Failed to debug notifications:', error);
+    }
+  }
+
+  /**
+   * Debug method to force reschedule (for testing)
+   */
+  public async debugForceReschedule(): Promise<void> {
+    try {
+      console.log('🧪 DEBUG: Force rescheduling notifications...');
+      await this.cancelAllNotifications();
+      
+      const preferences = await storageService.getPreferences();
+      if (preferences.notificationTime.type === 'random') {
+        await this.scheduleRandomNotifications(
+          preferences.notificationTime.randomStart!,
+          preferences.notificationTime.randomEnd!,
+          this.NOTIFICATION_QUEUE_SIZE
+        );
+      }
+      
+      await this.debugPendingNotifications();
+    } catch (error) {
+      console.error('Failed to force reschedule:', error);
     }
   }
 
