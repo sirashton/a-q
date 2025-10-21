@@ -72,7 +72,7 @@ class NotificationService {
 
       // Check if we have any warning notifications that need to be cleaned up
       const hasWarningNotification = pendingNotifications.some(notif => 
-        (notif.extra as any)?.adviceId === 'warning'
+        (notif.extra as { adviceId?: string })?.adviceId === 'warning'
       );
 
       // If we have a warning notification, it means the user hasn't opened the app
@@ -462,7 +462,7 @@ class NotificationService {
       
       pending.forEach((notif, index) => {
         const scheduleDate = new Date(notif.schedule?.at || '');
-        const isWarning = (notif.extra as any)?.adviceId === 'warning';
+        const isWarning = (notif.extra as { adviceId?: string })?.adviceId === 'warning';
         console.log(`${index + 1}. ID: ${notif.id}, Date: ${scheduleDate.toLocaleString()}, Warning: ${isWarning}`);
       });
     } catch (error) {
