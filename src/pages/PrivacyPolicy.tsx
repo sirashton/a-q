@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const PrivacyPolicy: React.FC = () => {
   return (
@@ -19,7 +20,7 @@ const PrivacyPolicy: React.FC = () => {
             <p>Your data is used only to provide the app's functionality. No personal information is transmitted to external servers.</p>
 
             <h2 className="text-xl font-semibold text-primary-800 mt-6">Data Deletion</h2>
-            <p>To delete your data, simply uninstall the app or use the reset option in settings. See our <a href="/account-deletion" className="text-primary-600 underline">Account Deletion Policy</a> for details.</p>
+            <p>To delete your data, simply uninstall the app or use the reset option in settings. See our <Link to="/account-deletion" className="text-primary-600 underline">Account Deletion Policy</Link> for details.</p>
 
             <h2 className="text-xl font-semibold text-primary-800 mt-6">Contact</h2>
             <p>Questions? Contact us at <a href="mailto:hello@a-q.app" className="text-primary-600 underline">privacy@a-q.app</a></p>
