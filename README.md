@@ -151,7 +151,7 @@ src/
 - Prompts users to install mobile app for full functionality
 - Uses browser's native Notification API
 
-## 🧪 Testing
+## 🧪 Testing & CI/CD
 
 ### Unit Tests
 - Service layer testing with Vitest
@@ -163,6 +163,12 @@ src/
 - Tests core functionality and user flows
 - Country persistence and navigation
 
+### CI/CD Pipeline
+- **GitHub Actions**: Runs on every push/PR
+- **Quality Gates**: Linting, testing, and building
+- **Vercel Integration**: Automatic deployment when CI passes
+- **Environment Consistency**: Exact version pinning ensures reproducible builds
+
 ### Running Tests
 ```bash
 # Run all tests
@@ -171,11 +177,22 @@ npm run test:all
 # Run specific test suites
 npm run test:run        # Unit tests only
 npm run test:e2e        # E2E tests only
+
+# Pre-commit validation
+npm run pre-commit      # Lint + test + build
 ```
 
 ## 🚀 Deployment
 
-### Web Deployment
+### Web Deployment (Vercel)
+The app is automatically deployed to Vercel on every push to the main branch:
+
+1. **Automatic**: Push to main branch triggers deployment
+2. **Custom Domain**: Connect your domain in Vercel dashboard
+3. **Preview Deployments**: Pull requests get preview URLs
+4. **Global CDN**: Fast loading worldwide
+
+**Manual Deployment:**
 1. Build the project: `npm run build`
 2. Deploy the `dist/` folder to your hosting provider
 3. Configure routing for SPA (all routes should serve `index.html`)
