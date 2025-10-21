@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { storageService } from './services/storageService';
 import { notificationService } from './services/notificationService';
 import { safeAreaService } from './services/safeAreaService';
@@ -8,6 +8,7 @@ import List from './pages/List';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AccountDeletion from './pages/AccountDeletion';
+import NotFound from './pages/NotFound';
 import CountrySelector from './components/CountrySelector';
 import { UserPreferences } from './services/storageService';
 import { App as CapacitorApp } from "@capacitor/app";
@@ -88,7 +89,7 @@ function App() {
           <Route path="/settings" element={<Settings preferences={preferences!} onPreferencesUpdated={handlePreferencesUpdated} />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/account-deletion" element={<AccountDeletion />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </Router>
