@@ -1,4 +1,4 @@
-import { LocalNotifications, PermissionStatus } from '@capacitor/local-notifications';
+import { LocalNotifications, PermissionStatus, PendingLocalNotificationSchema } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { storageService } from './storageService';
 
@@ -16,6 +16,9 @@ export interface NotificationTime {
   randomStart?: string;
   randomEnd?: string;
 }
+
+// Use the proper Capacitor type
+type PendingNotification = PendingLocalNotificationSchema;
 
 class NotificationService {
   private readonly CHANNEL_ID = 'daily-advice-channel';
@@ -69,7 +72,7 @@ class NotificationService {
 
       // Check if we have any warning notifications that need to be cleaned up
       const hasWarningNotification = pendingNotifications.some(notif => 
-        notif.extra?.adviceId === 'warning'
+        (notif.extra as any)?.adviceId === 'warning'
       );
 
       // If we have a warning notification, it means the user hasn't opened the app
@@ -439,7 +442,7 @@ class NotificationService {
   /**
    * Get pending notifications
    */
-  public async getPendingNotifications(): Promise<any[]> {
+  public async getPendingNotifications(): Promise<PendingNotification[]> {
     try {
       const result = await LocalNotifications.getPending();
       return result.notifications;
@@ -458,8 +461,8 @@ class NotificationService {
       console.log(`📊 Total pending notifications: ${pending.length}`);
       
       pending.forEach((notif, index) => {
-        const scheduleDate = new Date(notif.schedule.at);
-        const isWarning = notif.extra?.adviceId === 'warning';
+        const scheduleDate = new Date(notif.schedule?.at || '');
+        const isWarning = (notif.extra as any)?.adviceId === 'warning';
         console.log(`${index + 1}. ID: ${notif.id}, Date: ${scheduleDate.toLocaleString()}, Warning: ${isWarning}`);
       });
     } catch (error) {

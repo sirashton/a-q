@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserPreferences } from '../services/storageService';
 import { adviceService } from '../services/adviceService';
 import { AdviceSection } from '../services/adviceService';
@@ -17,20 +17,7 @@ const List: React.FC<ListProps> = ({ preferences }) => {
   const [filteredSections, setFilteredSections] = useState<AdviceSection[]>([]);
   const [disabledAdvices, setDisabledAdvices] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadSections();
-    loadDisabledAdvices();
-  }, [preferences.selectedCountry]);
-
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      filterSections();
-    } else {
-      setFilteredSections(sections);
-    }
-  }, [searchQuery, sections]);
-
-  const loadSections = async () => {
+  const loadSections = useCallback(async () => {
     try {
       setIsLoading(true);
       const sectionsData = await adviceService.getSections(preferences.selectedCountry);
@@ -41,18 +28,18 @@ const List: React.FC<ListProps> = ({ preferences }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [preferences.selectedCountry]);
 
-  const loadDisabledAdvices = async () => {
+  const loadDisabledAdvices = useCallback(async () => {
     try {
       const disabled = await adviceService.getDisabledAdvices();
       setDisabledAdvices(disabled);
     } catch (error) {
       console.error('Failed to load disabled advices:', error);
     }
-  };
+  }, []);
 
-  const filterSections = async () => {
+  const filterSections = useCallback(async () => {
     try {
       const searchResults = await adviceService.searchAdvices(searchQuery, preferences.selectedCountry);
       
@@ -77,7 +64,20 @@ const List: React.FC<ListProps> = ({ preferences }) => {
     } catch (error) {
       console.error('Failed to search advices:', error);
     }
-  };
+  }, [searchQuery, sections, preferences.selectedCountry]);
+
+  useEffect(() => {
+    loadSections();
+    loadDisabledAdvices();
+  }, [loadSections, loadDisabledAdvices]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      filterSections();
+    } else {
+      setFilteredSections(sections);
+    }
+  }, [searchQuery, sections, filterSections]);
 
   const handleToggleAdvice = async (adviceId: string) => {
     try {

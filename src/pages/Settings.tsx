@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { UserPreferences, storageService } from '../services/storageService';
 import { adviceService } from '../services/adviceService';
+import { NotificationSettings } from '../services/notificationService';
 import BottomNav from '../components/BottomNav';
 import NotificationSettingsComponent from '../components/NotificationSettings';
 import { textStyles, cardStyles } from '../styles/components';
@@ -39,7 +40,7 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
   };
 
 
-  const handleNotificationSettingsChange = async (settings: any) => {
+  const handleNotificationSettingsChange = async (settings: Partial<NotificationSettings>) => {
     const updatedPrefs = {
       ...localPreferences,
       notificationsEnabled: settings.enabled ?? localPreferences.notificationsEnabled,

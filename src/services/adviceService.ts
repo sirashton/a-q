@@ -1,5 +1,5 @@
 import advicesData from '../data/advices.json';
-import { storageService } from './storageService';
+import { storageService, UserPreferences } from './storageService';
 
 export interface Advice {
   id: string;
@@ -126,7 +126,7 @@ export class AdviceService {
     return selectedAdvice;
   }
 
-  private async generateNewDailyAdvice(availableAdvices: Advice[], prefs: any): Promise<Advice | null> {
+  private async generateNewDailyAdvice(availableAdvices: Advice[], prefs: UserPreferences): Promise<Advice | null> {
     if (availableAdvices.length === 0) {
       return null;
     }
