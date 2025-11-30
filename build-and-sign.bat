@@ -6,8 +6,8 @@ echo 🚀 A+Q App Build and Sign Script
 echo =================================
 
 REM Set default values
-set VERSION_CODE=21
-set VERSION_NAME=0.0.3
+set VERSION_CODE=22
+set VERSION_NAME=0.0.4
 set KEYSTORE_PATH=android\Android.Keystore
 set KEY_ALIAS=key0
 set KEYSTORE_PASSWORD=signThisApp!
@@ -19,7 +19,25 @@ if not "%2"=="" set VERSION_NAME=%2
 
 echo 📝 Building version %VERSION_CODE% (%VERSION_NAME%)...
 
-REM Step 1: Build web app
+REM Step 0: Convert SVG text to paths (ensures font renders correctly)
+echo 🔤 Converting SVG text to paths...
+call node scripts\convert-svg-text-to-paths.cjs
+if %ERRORLEVEL% neq 0 (
+    echo ❌ SVG conversion failed
+    exit /b 1
+)
+echo ✅ SVG converted successfully
+
+REM Step 1: Generate assets (icons and splash screens)
+echo 🎨 Generating app assets (icons and splash screens)...
+call npm run assets:generate
+if %ERRORLEVEL% neq 0 (
+    echo ❌ Asset generation failed
+    exit /b 1
+)
+echo ✅ Assets generated successfully
+
+REM Step 2: Build web app
 echo 🌐 Building web application...
 call npm run build
 if %ERRORLEVEL% neq 0 (
@@ -28,7 +46,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ Web build completed
 
-REM Step 2: Sync with Capacitor
+REM Step 3: Sync with Capacitor
 echo 📱 Syncing with Capacitor...
 call npx cap sync android
 if %ERRORLEVEL% neq 0 (
@@ -37,7 +55,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ Capacitor sync completed
 
-REM Step 3: Build Android App Bundle (AAB)
+REM Step 4: Build Android App Bundle (AAB)
 echo 🔨 Building Android App Bundle (AAB)...
 cd android
 call gradlew clean
@@ -53,7 +71,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ Android App Bundle built successfully
 
-REM Step 4: Sign the AAB
+REM Step 5: Sign the AAB
 echo 🔐 Signing AAB...
 jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ..\%KEYSTORE_PATH% -storepass %KEYSTORE_PASSWORD% -keypass %KEY_PASSWORD% app\build\outputs\bundle\release\app-release.aab %KEY_ALIAS%
 if %ERRORLEVEL% neq 0 (
@@ -62,7 +80,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ AAB signed successfully
 
-REM Step 5: Display results
+REM Step 6: Display results
 echo.
 echo 📋 Build Summary
 echo ===============

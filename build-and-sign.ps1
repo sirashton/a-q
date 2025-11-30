@@ -2,8 +2,8 @@
 # This script builds the web app, syncs with Android, and signs the APK
 
 param(
-    [string]$VersionCode = "21",
-    [string]$VersionName = "0.0.3",
+    [string]$VersionCode = "22",
+    [string]$VersionName = "0.0.4",
     [string]$KeystorePath = "android\Android.Keystore",
     [string]$KeyAlias = "key0",
     [string]$KeystorePassword = "signThisApp!",
@@ -29,7 +29,23 @@ try {
     Set-Content $buildGradlePath $buildGradleContent -NoNewline
     Write-Host "✅ Updated version to $VersionCode ($VersionName)" -ForegroundColor Green
 
-    # Step 2: Build web app
+    # Step 2: Convert SVG text to paths (ensures font renders correctly)
+    Write-Host "🔤 Converting SVG text to paths..." -ForegroundColor Yellow
+    node scripts\convert-svg-text-to-paths.cjs
+    if ($LASTEXITCODE -ne 0) {
+        throw "SVG conversion failed"
+    }
+    Write-Host "✅ SVG converted successfully" -ForegroundColor Green
+
+    # Step 3: Generate assets (icons and splash screens)
+    Write-Host "🎨 Generating app assets (icons and splash screens)..." -ForegroundColor Yellow
+    npm run assets:generate
+    if ($LASTEXITCODE -ne 0) {
+        throw "Asset generation failed"
+    }
+    Write-Host "✅ Assets generated successfully" -ForegroundColor Green
+
+    # Step 4: Build web app
     Write-Host "🌐 Building web application..." -ForegroundColor Yellow
     npm run build
     if ($LASTEXITCODE -ne 0) {
@@ -37,7 +53,7 @@ try {
     }
     Write-Host "✅ Web build completed" -ForegroundColor Green
 
-    # Step 3: Sync with Capacitor
+    # Step 5: Sync with Capacitor
     Write-Host "📱 Syncing with Capacitor..." -ForegroundColor Yellow
     npx cap sync android
     if ($LASTEXITCODE -ne 0) {
@@ -45,7 +61,7 @@ try {
     }
     Write-Host "✅ Capacitor sync completed" -ForegroundColor Green
 
-    # Step 4: Clean and build Android APK
+    # Step 6: Clean and build Android APK
     Write-Host "🔨 Building Android APK..." -ForegroundColor Yellow
     Set-Location android
     ./gradlew clean
@@ -59,7 +75,7 @@ try {
     }
     Write-Host "✅ Android APK built successfully" -ForegroundColor Green
 
-    # Step 5: Sign the APK
+    # Step 7: Sign the APK
     Write-Host "🔐 Signing APK..." -ForegroundColor Yellow
     $unsignedApk = "app\build\outputs\apk\release\app-release-unsigned.apk"
     $signedApk = "app\build\outputs\apk\release\app-release-signed.apk"
@@ -71,7 +87,7 @@ try {
     }
     Write-Host "✅ APK signed successfully" -ForegroundColor Green
 
-    # Step 6: Align the APK
+    # Step 8: Align the APK
     Write-Host "⚡ Aligning APK for optimal performance..." -ForegroundColor Yellow
     $zipalignPath = "$env:ANDROID_HOME\build-tools\35.0.0\zipalign.exe"
     & $zipalignPath -v 4 $unsignedApk $signedApk
@@ -80,7 +96,7 @@ try {
     }
     Write-Host "✅ APK aligned successfully" -ForegroundColor Green
 
-    # Step 7: Verify and display results
+    # Step 9: Verify and display results
     Write-Host "📋 Build Summary" -ForegroundColor Cyan
     Write-Host "===============" -ForegroundColor Cyan
     Write-Host "Version Code: $VersionCode" -ForegroundColor White
