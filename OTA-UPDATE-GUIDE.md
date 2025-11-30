@@ -215,19 +215,35 @@ npx cap sync android
 ```
 
 ### For Production Release:
+
+**Build App Bundle (AAB) for Google Play Store:**
 ```bash
-# 1. Enable Live Update and build
+npm run build:android:prod
+# AAB will be at: android/app/build/outputs/bundle/release/app-release.aab
+```
+
+This single command:
+1. ✅ Enables Live Update
+2. ✅ Builds web app
+3. ✅ Syncs with Capacitor
+4. ✅ Cleans Gradle cache
+5. ✅ Builds release AAB
+
+**Complete Production Workflow:**
+```bash
+# 1. Build production AAB (enables Live Update, builds, syncs, creates AAB)
 npm run build:android:prod
 
-# 2. Build release APK (for app store)
-cd android
-./gradlew assembleRelease
-
-# 3. Upload bundle to Capawesome for OTA
+# 2. Upload bundle to Capawesome for OTA updates
 # (Use dashboard or CLI - see "Deploy Updates" section above)
+# Upload the contents of your dist/ folder
 
-# 4. Release APK to app store (Google Play Store)
-# The APK includes the initial bundle, but users will get OTA updates
+# 3. Sign the AAB (if needed)
+# Use build-and-sign.ps1 script, or sign manually with jarsigner
+.\build-and-sign.ps1 [versionCode] [versionName]
+
+# 4. Upload signed AAB to Google Play Store
+# The AAB includes the initial bundle, but users will get OTA updates
 ```
 
 ## Understanding the Update Cycle

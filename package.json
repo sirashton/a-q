@@ -1,7 +1,7 @@
 {
   "name": "Advices and Queries",
   "private": true,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "engines": {
     "node": ">=20.0.0",
@@ -40,7 +40,7 @@
     "run:android": "node scripts/run-android-app.cjs",
     "dev:android": "npm run disable:live-update && npm run sync:android && cd android && gradlew.bat clean && gradlew.bat assembleDebug && cd .. && npm run run:android",
     "dev:android:fresh": "npm run clear:android && npm run dev:android",
-    "build:android:prod": "npm run enable:live-update && npm run build && npx cap sync android",
+    "build:android:prod": "npm run enable:live-update && npm run build && npx cap sync android && cd android && gradlew.bat clean && gradlew.bat bundleRelease && cd ..",
     "deploy:android": "npm run assets:generate && npm run build && npx cap sync && echo 1 | npx cap run android"
   },
   "dependencies": {

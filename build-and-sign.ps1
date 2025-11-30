@@ -2,8 +2,8 @@
 # This script builds the web app, syncs with Android, and signs the APK
 
 param(
-    [string]$VersionCode = "23",
-    [string]$VersionName = "0.0.5",
+    [string]$VersionCode = "24",
+    [string]$VersionName = "0.0.6",
     [string]$KeystorePath = "android\Android.Keystore",
     [string]$KeyAlias = "key0",
     [string]$KeystorePassword = "signThisApp!",

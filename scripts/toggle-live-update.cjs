@@ -54,23 +54,8 @@ function toggleLiveUpdate() {
       `import { LiveUpdate } from "@capawesome/capacitor-live-update";`
     );
     
-    // Uncomment the listener - match the commented block exactly
-    const commentedListener = `// LiveUpdate listener - DISABLED for development
-    // Uncomment when ready for production OTA updates
-    // CapacitorApp.addListener("resume", async () => {
-    //   try {
-    //     const { nextBundleId } = await LiveUpdate.sync();
-    //     if (nextBundleId) {
-    //       // Ask the user if they want to apply the update immediately
-    //       const shouldReload = confirm("A new update is available. Would you like to install it?");
-    //       if (shouldReload) {
-    //         await LiveUpdate.reload();
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error('Live Update sync failed:', error);
-    //   }
-    // });`;
+    // Uncomment the listener - use regex to match the commented block more flexibly
+    const commentedPattern = /\/\/\s*LiveUpdate\s+listener[\s\S]*?\/\/\s*Uncomment[\s\S]*?\/\/\s*CapacitorApp\.addListener[\s\S]*?\/\/\s*\};[\s\S]*?\/\/\s*\};[\s\S]*?\/\/\s*\}\);/;
     
     const uncommentedListener = `// LiveUpdate listener - checks for updates when app resumes
     CapacitorApp.addListener("resume", async () => {
@@ -88,7 +73,15 @@ function toggleLiveUpdate() {
       }
     });`;
     
-    appContent = appContent.replace(commentedListener, uncommentedListener);
+    if (commentedPattern.test(appContent)) {
+      appContent = appContent.replace(commentedPattern, uncommentedListener);
+    } else {
+      // Try to find and replace any commented listener pattern
+      appContent = appContent.replace(
+        /\/\/\s*LiveUpdate[\s\S]*?\/\/\s*CapacitorApp[\s\S]*?\/\/\s*\};[\s\S]*?\/\/\s*\};[\s\S]*?\/\/\s*\}\);/,
+        uncommentedListener
+      );
+    }
     console.log('✅ Live Update enabled in App.tsx');
   } else {
     // Disable imports
