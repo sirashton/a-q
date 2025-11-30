@@ -34,7 +34,7 @@ const Home: React.FC<HomeProps> = ({ preferences }) => {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4">
+      <main className="min-h-screen flex items-center justify-center px-4 bottom-nav-spacing">
         {isLoading ? (
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-400 mx-auto mb-4"></div>

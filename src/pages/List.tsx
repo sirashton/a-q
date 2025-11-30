@@ -126,7 +126,7 @@ const List: React.FC<ListProps> = ({ preferences }) => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
+      <main className="max-w-4xl mx-auto px-4 py-8 bottom-nav-spacing">
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-400 mx-auto mb-4"></div>

@@ -74,7 +74,7 @@ const Settings: React.FC<SettingsProps> = ({ preferences, onPreferencesUpdated }
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
+      <main className="max-w-4xl mx-auto px-4 py-8 bottom-nav-spacing">
         <div className="space-y-8">
           {/* Country Selection */}
           <div className={`${cardStyles.base}`}>

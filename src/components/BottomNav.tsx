@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarDays, List, Settings } from 'lucide-react';
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
+  const navRef = useRef<HTMLElement>(null);
 
   const navItems = [
     { path: '/', label: 'Today', icon: CalendarDays },
@@ -11,8 +12,37 @@ const BottomNav: React.FC = () => {
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
+  useEffect(() => {
+    const updateNavHeight = () => {
+      if (navRef.current) {
+        const height = navRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--bottom-nav-height', `${height}px`);
+      }
+    };
+
+    // Set initial height
+    updateNavHeight();
+
+    // Update on window resize
+    window.addEventListener('resize', updateNavHeight);
+    
+    // Use ResizeObserver for more accurate measurements
+    const resizeObserver = new ResizeObserver(updateNavHeight);
+    if (navRef.current) {
+      resizeObserver.observe(navRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateNavHeight);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-secondary-200 shadow-lg" style={{ paddingBottom: '56px' }}>
+    <nav 
+      ref={navRef}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-secondary-200 shadow-lg safe-area-bottom-fixed"
+    >
       <div className="flex justify-around items-center py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;

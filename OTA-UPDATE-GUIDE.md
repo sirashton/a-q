@@ -173,6 +173,34 @@ npm run build:android:prod
 2. Clear app data and reinstall
 3. Check that `npx cap sync` completed successfully
 
+### Switching Between Emulators/Devices
+When you switch to a different Android emulator or device, each one has its own app installation with cached data. To see your latest changes:
+
+**Option 1: Clear app data (recommended)**
+```bash
+npm run clear:android
+npm run dev:android
+```
+
+**Option 2: Uninstall and reinstall**
+```bash
+npm run uninstall:android
+npm run dev:android
+# Then install/run the app in Android Studio
+```
+
+**Option 3: Use the fresh dev script**
+```bash
+npm run dev:android:fresh
+# This clears app data, then builds and syncs
+```
+
+**Why this happens:**
+- Each emulator/device is a separate Android instance
+- They have independent app installations and data
+- The new device might have an old version cached
+- Clearing data ensures you get the latest build
+
 ## Workflow
 
 ### For Development:
