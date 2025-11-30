@@ -12,7 +12,7 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-secondary-200 shadow-lg">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-secondary-200 shadow-lg" style={{ paddingBottom: '56px' }}>
       <div className="flex justify-around items-center py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;

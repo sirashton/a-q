@@ -1,0 +1,23 @@
+{
+  "version": {
+    "code": "21",
+    "name": "0.0.3"
+  },
+  "signing": {
+    "keystore": "android/Android.Keystore",
+    "alias": "key0",
+    "keystorePassword": "signThisApp!",
+    "keyPassword": "signThisApp0!"
+  },
+  "build": {
+    "cleanFirst": true,
+    "skipTests": false,
+    "optimize": true
+  },
+  "output": {
+    "signedApkPath": "android/app/build/outputs/apk/release/app-release-signed.apk",
+    "unsignedApkPath": "android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  }
+}
+
+

@@ -42,14 +42,19 @@ function App() {
 
     initializeApp();
 
+    // LiveUpdate listener - checks for updates when app resumes
     CapacitorApp.addListener("resume", async () => {
-      const { nextBundleId } = await LiveUpdate.sync();
-      if (nextBundleId) {
-        // Ask the user if they want to apply the update immediately
-        const shouldReload = confirm("A new update is available. Would you like to install it?");
-        if (shouldReload) {
-          await LiveUpdate.reload();
+      try {
+        const { nextBundleId } = await LiveUpdate.sync();
+        if (nextBundleId) {
+          // Ask the user if they want to apply the update immediately
+          const shouldReload = confirm("A new update is available. Would you like to install it?");
+          if (shouldReload) {
+            await LiveUpdate.reload();
+          }
         }
+      } catch (error) {
+        console.error('Live Update sync failed:', error);
       }
     });
   }, []);
