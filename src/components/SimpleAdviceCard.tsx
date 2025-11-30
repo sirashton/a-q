@@ -19,6 +19,7 @@ const SimpleAdviceCard: React.FC<SimpleAdviceCardProps> = ({
   return (
     <div className={`text-center ${className}`} data-testid="advice-content">
       <h2 className="text-4xl font-light text-secondary-800 mb-8">
+        {/* {displayId} */}
         {displayId}
       </h2>
       

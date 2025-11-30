@@ -32,6 +32,11 @@
     "postinstall": "node scripts/fix-del.cjs",
     "assets:generate": "npx @capacitor/assets generate",
     "assets:copy": "@capacitor/assets copy",
+    "disable:live-update": "node scripts/toggle-live-update.cjs disable",
+    "enable:live-update": "node scripts/toggle-live-update.cjs enable",
+    "sync:android": "npm run build && npx cap sync android",
+    "dev:android": "npm run disable:live-update && npm run sync:android && cd android && gradlew.bat clean && cd ..",
+    "build:android:prod": "npm run enable:live-update && npm run build && npx cap sync android",
     "deploy:android": "npm run assets:generate && npm run build && npx cap sync && echo 1 | npx cap run android"
   },
   "dependencies": {
