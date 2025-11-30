@@ -6,8 +6,8 @@ echo 🚀 A+Q App Build and Sign Script
 echo =================================
 
 REM Set default values
-set VERSION_CODE=22
-set VERSION_NAME=0.0.4
+set VERSION_CODE=23
+set VERSION_NAME=0.0.5
 set KEYSTORE_PATH=android\Android.Keystore
 set KEY_ALIAS=key0
 set KEYSTORE_PASSWORD=signThisApp!
