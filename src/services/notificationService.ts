@@ -192,6 +192,13 @@ class NotificationService {
     try {
       console.log('🔔 Starting to schedule daily notifications...');
       
+      // Check permissions before scheduling
+      const permissionStatus = await this.checkAndRequestPermissions();
+      if (permissionStatus.display !== 'granted') {
+        console.warn('❌ Notification permissions not granted, cannot schedule notifications');
+        throw new Error('Notification permissions not granted');
+      }
+      
       const preferences = await storageService.getPreferences();
       console.log('📋 User preferences:', {
         notificationsEnabled: preferences.notificationsEnabled,
@@ -269,6 +276,13 @@ class NotificationService {
    */
   private async scheduleRandomNotifications(startTime: string, endTime: string, days: number): Promise<void> {
     try {
+      // Verify permissions are granted before scheduling
+      const permissionStatus = await LocalNotifications.checkPermissions();
+      if (permissionStatus.display !== 'granted') {
+        console.warn('❌ Notification permissions not granted, cannot schedule random notifications');
+        throw new Error('Notification permissions not granted');
+      }
+      
       console.log(`📅 Scheduling ${days} random notifications...`);
       
       const notifications = [];
@@ -339,6 +353,13 @@ class NotificationService {
    */
   private async scheduleNotification(targetTime: string): Promise<void> {
     try {
+      // Verify permissions are granted before scheduling
+      const permissionStatus = await LocalNotifications.checkPermissions();
+      if (permissionStatus.display !== 'granted') {
+        console.warn(`❌ Notification permissions not granted, cannot schedule notification for ${targetTime}`);
+        throw new Error('Notification permissions not granted');
+      }
+      
       console.log(`🔧 Processing target time: ${targetTime}`);
       
       const [hours, minutes] = targetTime.split(':').map(Number);
