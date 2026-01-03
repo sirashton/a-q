@@ -1,6 +1,7 @@
 import { LocalNotifications, PermissionStatus, PendingLocalNotificationSchema } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { storageService } from './storageService';
+import { notificationLogger } from './notificationLogger';
 
 export interface NotificationSettings {
   enabled: boolean;
@@ -37,6 +38,7 @@ class NotificationService {
    */
   public async initialize(): Promise<void> {
     try {
+      notificationLogger.debug('initialize() called - entry point');
       // Create notification channel for Android
       await this.createNotificationChannel();
       
@@ -44,7 +46,9 @@ class NotificationService {
       await this.checkAndRequestPermissions();
       
       // Check if we need to top up the notification queue
+      notificationLogger.debug('initialize() calling checkAndTopUpNotificationsInternal()');
       await this.checkAndTopUpNotificationsInternal();
+      notificationLogger.debug('initialize() completed');
     } catch (error) {
       console.error('Failed to initialize notifications:', error);
     }
@@ -54,6 +58,7 @@ class NotificationService {
    * Public method to check and top up notifications (called from App component)
    */
   public async checkAndTopUpNotifications(): Promise<void> {
+    notificationLogger.debug('checkAndTopUpNotifications() called from App.tsx');
     await this.checkAndTopUpNotificationsInternal();
   }
 
@@ -62,13 +67,28 @@ class NotificationService {
    */
   private async checkAndTopUpNotificationsInternal(): Promise<void> {
     try {
+      notificationLogger.debug('checkAndTopUpNotificationsInternal() - START');
       const preferences = await storageService.getPreferences();
+      notificationLogger.debug('Top-up check - Preferences', {
+        notificationsEnabled: preferences.notificationsEnabled,
+        type: preferences.notificationTime.type,
+        fixedTime: preferences.notificationTime.fixedTime,
+        randomStart: preferences.notificationTime.randomStart,
+        randomEnd: preferences.notificationTime.randomEnd
+      });
+      
       if (!preferences.notificationsEnabled || preferences.notificationTime.type !== 'random') {
+        notificationLogger.debug('Top-up check - EARLY RETURN (not random or disabled)');
         return;
       }
 
       const pendingNotifications = await this.getPendingNotifications();
       console.log(`📊 Pending notifications: ${pendingNotifications.length}`);
+      console.log('🔍 [DEBUG] Pending notification details:', pendingNotifications.map(n => ({
+        id: n.id,
+        scheduled: n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : 'N/A',
+        extra: n.extra
+      })));
 
       // Check if we have any warning notifications that need to be cleaned up
       const hasWarningNotification = pendingNotifications.some(notif => 
@@ -213,24 +233,52 @@ class NotificationService {
       }
 
       // Cancel existing notifications
+      console.log('🔍 [DEBUG] About to cancel all notifications...');
+      const pendingBeforeCancel = await this.getPendingNotifications();
+      console.log('🔍 [DEBUG] Pending BEFORE cancel:', pendingBeforeCancel.map(n => ({
+        id: n.id,
+        scheduled: n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : 'N/A',
+        extra: n.extra
+      })));
+      
       await this.cancelAllNotifications();
       console.log('🧹 Cleared existing notifications');
+      
+      // Verify cancellation worked
+      const pendingAfterCancel = await this.getPendingNotifications();
+      console.log('🔍 [DEBUG] Pending AFTER cancel:', pendingAfterCancel.map(n => ({
+        id: n.id,
+        scheduled: n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : 'N/A',
+        extra: n.extra
+      })));
+      console.log('🔍 [DEBUG] Cancellation verification - Before:', pendingBeforeCancel.length, 'After:', pendingAfterCancel.length);
 
       const notificationTime = preferences.notificationTime;
       
       if (notificationTime.type === 'fixed' && notificationTime.fixedTime) {
         // Fixed time - schedule one notification that repeats daily
         console.log(`⏰ Fixed notification time: ${notificationTime.fixedTime}`);
+        console.log('🔍 [DEBUG] Scheduling FIXED time notification');
         await this.scheduleNotification(notificationTime.fixedTime);
       } else if (notificationTime.type === 'random' && notificationTime.randomStart && notificationTime.randomEnd) {
         // Random time - pre-schedule NOTIFICATION_QUEUE_SIZE days worth of notifications
         console.log(`🎲 Random notification times between ${notificationTime.randomStart} and ${notificationTime.randomEnd}`);
+        console.log('🔍 [DEBUG] Scheduling RANDOM time notifications');
         await this.scheduleRandomNotifications(notificationTime.randomStart, notificationTime.randomEnd, this.NOTIFICATION_QUEUE_SIZE);
       } else {
         console.log('❌ No valid notification time configured');
+        console.log('🔍 [DEBUG] Invalid notification config:', notificationTime);
         return;
       }
 
+      // Final verification of what was scheduled
+      const pendingAfterSchedule = await this.getPendingNotifications();
+      console.log('🔍 [DEBUG] Pending AFTER scheduling:', pendingAfterSchedule.map(n => ({
+        id: n.id,
+        scheduled: n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : 'N/A',
+        repeats: n.schedule?.repeats || false,
+        extra: n.extra
+      })));
       console.log('✅ Daily notifications scheduled successfully');
     } catch (error) {
       console.error('❌ Failed to schedule notifications:', error);
@@ -284,6 +332,7 @@ class NotificationService {
       }
       
       console.log(`📅 Scheduling ${days} random notifications...`);
+      console.log('🔍 [DEBUG] scheduleRandomNotifications() - START', { startTime, endTime, days });
       
       const notifications = [];
       
@@ -297,11 +346,19 @@ class NotificationService {
         notificationDate.setHours(hours, minutes, 0, 0);
         
         const notificationId = parseInt(`${i + 1}${hours}${minutes}`); // Unique ID for each day
+        const scheduledTimeStr = notificationDate.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        console.log(`🔍 [DEBUG] Random notification ${i + 1}/${days}: ID=${notificationId}, Time=${randomTime}, Date=${notificationDate.toLocaleString()}`);
         
         notifications.push({
           id: notificationId,
           title: 'Daily Advice & Query',
-          body: 'Time for stillness? Open the app to see today\'s a+q',
+          body: `Scheduled for ${scheduledTimeStr}. Time for stillness? Open the app to see today's a+q`,
           schedule: {
             at: notificationDate,
             repeats: false
@@ -338,10 +395,18 @@ class NotificationService {
       });
       
       // Schedule all notifications at once
+      console.log('🔍 [DEBUG] About to schedule', notifications.length, 'notifications with IDs:', notifications.map(n => n.id));
       await LocalNotifications.schedule({
         notifications: notifications
       });
       
+      // Verify what was actually scheduled
+      const pendingAfterRandom = await this.getPendingNotifications();
+      console.log('🔍 [DEBUG] Pending AFTER random scheduling:', pendingAfterRandom.map(n => ({
+        id: n.id,
+        scheduled: n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : 'N/A',
+        extra: n.extra
+      })));
       console.log(`✅ Successfully scheduled ${days} random notifications + 1 warning notification`);
     } catch (error) {
       console.error('Failed to schedule random notifications:', error);
@@ -376,7 +441,14 @@ class NotificationService {
 
       // Use a generic message since we can't dynamically update content when app is closed
       const notificationId = parseInt(`${hours}${minutes}`);
-      const notificationBody = 'Time for stillness? Open the app to see today\'s a+q';
+      const scheduledTimeStr = scheduleDate.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      const notificationBody = `Scheduled for ${scheduledTimeStr} daily. Time for stillness? Open the app to see today's a+q`;
       
       console.log(`📤 Scheduling notification with ID ${notificationId}:`, {
         title: 'Daily Advice & Query',
@@ -436,22 +508,37 @@ class NotificationService {
    */
   public async cancelAllNotifications(): Promise<void> {
     try {
+      console.log('🔍 [DEBUG] cancelAllNotifications() - START');
       // Get all pending notifications first
       const pendingNotifications = await this.getPendingNotifications();
       const notificationIds = pendingNotifications.map(notif => notif.id);
+      console.log('🔍 [DEBUG] Cancelling notifications with IDs:', notificationIds);
       
       if (notificationIds.length > 0) {
         // Cancel notifications one by one to avoid the type casting issue
+        let successCount = 0;
+        let failCount = 0;
         for (const id of notificationIds) {
           try {
             await LocalNotifications.cancel({
               notifications: [{ id }]
             });
+            successCount++;
+            console.log(`🔍 [DEBUG] Successfully cancelled notification ID ${id}`);
           } catch (error) {
-            console.warn(`Failed to cancel notification ${id}:`, error);
+            failCount++;
+            console.warn(`🔍 [DEBUG] Failed to cancel notification ${id}:`, error);
           }
         }
-        console.log(`🧹 Cancelled ${notificationIds.length} notifications`);
+        console.log(`🧹 Cancelled ${successCount} notifications, ${failCount} failed`);
+        
+        // Verify cancellation
+        const pendingAfterCancel = await this.getPendingNotifications();
+        const remainingIds = pendingAfterCancel.map(n => n.id);
+        console.log('🔍 [DEBUG] Verification - Remaining notification IDs:', remainingIds);
+        if (remainingIds.length > 0) {
+          console.warn(`🔍 [DEBUG] ⚠️ WARNING: ${remainingIds.length} notifications still pending after cancellation!`);
+        }
       } else {
         console.log('🧹 No notifications to cancel');
       }
@@ -469,6 +556,48 @@ class NotificationService {
       return result.notifications;
     } catch (error) {
       console.error('Failed to get pending notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get formatted pending notifications for display
+   */
+  public async getFormattedPendingNotifications(): Promise<Array<{
+    id: number;
+    scheduledTime: string;
+    scheduledDate: Date;
+    isWarning: boolean;
+    isRepeating: boolean;
+    body: string;
+    title: string;
+  }>> {
+    try {
+      const pending = await this.getPendingNotifications();
+      return pending.map(notif => {
+        const scheduleDate = notif.schedule?.at ? new Date(notif.schedule.at) : new Date();
+        const isWarning = (notif.extra as { adviceId?: string })?.adviceId === 'warning';
+        const isRepeating = notif.schedule?.repeats === true;
+        
+        return {
+          id: notif.id,
+          scheduledTime: scheduleDate.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }),
+          scheduledDate: scheduleDate,
+          isWarning,
+          isRepeating,
+          body: notif.body || '',
+          title: notif.title || ''
+        };
+      }).sort((a, b) => a.scheduledDate.getTime() - b.scheduledDate.getTime());
+    } catch (error) {
+      notificationLogger.error('Failed to get formatted pending notifications', error);
       return [];
     }
   }
@@ -496,7 +625,7 @@ class NotificationService {
    */
   public async debugForceReschedule(): Promise<void> {
     try {
-      console.log('🧪 DEBUG: Force rescheduling notifications...');
+      notificationLogger.debug('Force rescheduling notifications...');
       await this.cancelAllNotifications();
       
       const preferences = await storageService.getPreferences();
@@ -510,8 +639,26 @@ class NotificationService {
       
       await this.debugPendingNotifications();
     } catch (error) {
-      console.error('Failed to force reschedule:', error);
+      notificationLogger.error('Failed to force reschedule', error);
     }
+  }
+
+  /**
+   * Export notification logs for debugging
+   */
+  public async exportLogs(): Promise<string> {
+    return await notificationLogger.exportLogs();
+  }
+
+  /**
+   * Get recent notification logs
+   */
+  public getRecentLogs(count: number = 50): string {
+    const logs = notificationLogger.getRecentLogs(count);
+    return logs.map(entry => {
+      const dataStr = entry.data ? ' ' + JSON.stringify(entry.data, null, 2) : '';
+      return `${entry.timestamp} [${entry.level}] ${entry.message}${dataStr}`;
+    }).join('\n');
   }
 
   /**
@@ -519,6 +666,15 @@ class NotificationService {
    */
   public async updateNotificationSettings(settings: Partial<NotificationSettings>): Promise<void> {
     try {
+      console.log('🔍 [DEBUG] updateNotificationSettings() - START', settings);
+      
+      // Get current preferences before update
+      const currentPrefs = await storageService.getPreferences();
+      console.log('🔍 [DEBUG] Current preferences BEFORE update:', {
+        notificationsEnabled: currentPrefs.notificationsEnabled,
+        notificationTime: currentPrefs.notificationTime
+      });
+      
       // Update preferences
       await storageService.updatePreferences({
         notificationsEnabled: settings.enabled ?? false,
@@ -530,7 +686,15 @@ class NotificationService {
         }
       });
 
+      // Verify preferences were updated
+      const updatedPrefs = await storageService.getPreferences();
+      console.log('🔍 [DEBUG] Preferences AFTER update:', {
+        notificationsEnabled: updatedPrefs.notificationsEnabled,
+        notificationTime: updatedPrefs.notificationTime
+      });
+
       // Reschedule notifications
+      console.log('🔍 [DEBUG] Calling scheduleDailyNotifications() from updateNotificationSettings()');
       await this.scheduleDailyNotifications();
     } catch (error) {
       console.error('Failed to update notification settings:', error);
@@ -540,3 +704,4 @@ class NotificationService {
 }
 
 export const notificationService = new NotificationService();
+

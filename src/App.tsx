@@ -13,6 +13,7 @@ import CountrySelector from './components/CountrySelector';
 import { UserPreferences } from './services/storageService';
 import { App as CapacitorApp } from "@capacitor/app";
 import { LiveUpdate } from "@capawesome/capacitor-live-update";
+import { LIVE_UPDATE_ENABLED } from '../config/live-update';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -42,21 +43,23 @@ function App() {
 
     initializeApp();
 
-    // LiveUpdate listener - checks for updates when app resumes
-    CapacitorApp.addListener("resume", async () => {
-      try {
-        const { nextBundleId } = await LiveUpdate.sync();
-        if (nextBundleId) {
-          // Ask the user if they want to apply the update immediately
-          const shouldReload = confirm("A new update is available. Would you like to install it?");
-          if (shouldReload) {
-            await LiveUpdate.reload();
+    // LiveUpdate listener - only enabled when LIVE_UPDATE_ENABLED is true
+    if (LIVE_UPDATE_ENABLED) {
+      CapacitorApp.addListener("resume", async () => {
+        try {
+          const { nextBundleId } = await LiveUpdate.sync();
+          if (nextBundleId) {
+            // Ask the user if they want to apply the update immediately
+            const shouldReload = confirm("A new update is available. Would you like to install it?");
+            if (shouldReload) {
+              await LiveUpdate.reload();
+            }
           }
+        } catch (error) {
+          console.error('Live Update sync failed:', error);
         }
-      } catch (error) {
-        console.error('Live Update sync failed:', error);
-      }
-    });
+      });
+    }
   }, []);
 
   const handleCountrySelected = async (country: 'nz' | 'uk') => {

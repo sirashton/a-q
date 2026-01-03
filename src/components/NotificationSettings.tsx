@@ -24,10 +24,35 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
 
   const [permissionStatus, setPermissionStatus] = useState<string>('checking');
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingNotifications, setPendingNotifications] = useState<Array<{
+    id: number;
+    scheduledTime: string;
+    scheduledDate: Date;
+    isWarning: boolean;
+    isRepeating: boolean;
+    body: string;
+    title: string;
+  }>>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [showScheduledNotifications, setShowScheduledNotifications] = useState(false);
 
   useEffect(() => {
     checkPermissions();
+    if (Capacitor.getPlatform() !== 'web') {
+      loadPendingNotifications();
+    }
   }, []);
+
+  // Refresh notifications when settings change
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== 'web' && settings.enabled && permissionStatus === 'granted') {
+      // Small delay to allow notifications to be scheduled
+      const timer = setTimeout(() => {
+        loadPendingNotifications();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [settings.enabled, settings.timeType, settings.fixedTime, settings.randomStart, settings.randomEnd]);
 
   const checkPermissions = async () => {
     try {
@@ -83,6 +108,22 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
     onSettingsChange({ [field]: value });
   };
 
+  const loadPendingNotifications = async () => {
+    if (Capacitor.getPlatform() === 'web') {
+      return;
+    }
+    
+    setIsLoadingNotifications(true);
+    try {
+      const notifications = await notificationService.getFormattedPendingNotifications();
+      setPendingNotifications(notifications);
+    } catch (error) {
+      console.error('Failed to load pending notifications:', error);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
@@ -115,6 +156,11 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
         // Use Capacitor notification service for native platforms
         await notificationService.updateNotificationSettings(settings);
         console.log('Notification settings saved successfully');
+        
+        // Reload pending notifications after saving
+        setTimeout(() => {
+          loadPendingNotifications();
+        }, 1000);
       }
     } catch (error) {
       console.error('Failed to save notification settings:', error);
@@ -398,6 +444,21 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                   >
                     Debug: Force Reschedule
                   </button>
+                  
+                  <button
+                    onClick={async () => {
+                      try {
+                        const result = await notificationService.exportLogs();
+                        alert(`Logs exported! ${result.includes('.txt') ? 'File: ' + result : 'Check console for logs.'}`);
+                      } catch (error) {
+                        console.error('❌ Failed to export logs:', error);
+                        alert('Failed to export logs. Check console for details.');
+                      }
+                    }}
+                    className="w-full bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  >
+                    Debug: Export Logs
+                  </button>
                 </>
               )}
                 
@@ -452,6 +513,122 @@ const NotificationSettingsComponent: React.FC<NotificationSettingsProps> = ({
                 {isSaving ? 'Saving...' : 'Save Notification Settings'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Scheduled Notifications Debug Section */}
+        {Capacitor.getPlatform() !== 'web' && settings.enabled && permissionStatus === 'granted' && (
+          <div className="pt-6 border-t border-secondary-200 mt-6">
+            <button
+              onClick={() => {
+                setShowScheduledNotifications(!showScheduledNotifications);
+                if (!showScheduledNotifications && pendingNotifications.length === 0) {
+                  loadPendingNotifications();
+                }
+              }}
+              className="w-full flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg p-3 hover:bg-secondary-50"
+            >
+              <div>
+                <h4 className="text-sm font-medium text-secondary-900">Scheduled Notifications</h4>
+                <p className="text-xs text-secondary-500 mt-1">
+                  {pendingNotifications.length > 0 
+                    ? `${pendingNotifications.length} notification${pendingNotifications.length !== 1 ? 's' : ''} scheduled`
+                    : 'View scheduled notifications'
+                  }
+                </p>
+              </div>
+              <svg
+                className={`w-5 h-5 text-secondary-500 transition-transform ${showScheduledNotifications ? 'transform rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showScheduledNotifications && (
+              <div className="mt-4">
+                <div className="flex items-center justify-end mb-4">
+                  <button
+                    onClick={loadPendingNotifications}
+                    disabled={isLoadingNotifications}
+                    className="text-xs bg-secondary-200 text-secondary-700 px-3 py-1 rounded hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-500 disabled:opacity-50"
+                  >
+                    {isLoadingNotifications ? 'Loading...' : 'Refresh'}
+                  </button>
+                </div>
+
+                {isLoadingNotifications ? (
+                  <div className="text-center py-4 text-sm text-secondary-500">Loading...</div>
+                ) : pendingNotifications.length === 0 ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-yellow-800">
+                      No notifications scheduled. Save your settings to schedule notifications.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {pendingNotifications.map((notif) => {
+                        const now = new Date();
+                        const isPast = notif.scheduledDate < now;
+                        const isToday = notif.scheduledDate.toDateString() === now.toDateString();
+                        
+                        return (
+                          <div
+                            key={notif.id}
+                            className={`border rounded-lg p-3 text-sm ${
+                              isPast
+                                ? 'bg-gray-50 border-gray-300 opacity-60'
+                                : isToday
+                                ? 'bg-blue-50 border-blue-300'
+                                : notif.isWarning
+                                ? 'bg-orange-50 border-orange-300'
+                                : 'bg-white border-secondary-200'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-secondary-900">
+                                    {notif.isWarning ? '⚠️ Warning' : notif.isRepeating ? '🔄 Repeating' : '📅 Scheduled'}
+                                  </span>
+                                  {isPast && <span className="text-xs text-gray-500">(Past)</span>}
+                                  {isToday && !isPast && <span className="text-xs text-blue-600 font-medium">(Today)</span>}
+                                </div>
+                                <div className="text-secondary-700 mb-1">
+                                  <span className="font-medium">{notif.scheduledTime}</span>
+                                  {notif.isRepeating && <span className="text-xs text-secondary-500 ml-2">(Daily)</span>}
+                                </div>
+                                <div className="text-xs text-secondary-600 mt-1 line-clamp-2">
+                                  {notif.body}
+                                </div>
+                                <div className="text-xs text-secondary-400 mt-1">
+                                  ID: {notif.id}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 p-3 bg-secondary-50 rounded-lg">
+                      <p className="text-xs text-secondary-600">
+                        <strong>Expected:</strong> {settings.timeType === 'fixed' 
+                          ? `One notification at ${settings.fixedTime} (repeating daily)`
+                          : `Random notifications between ${settings.randomStart} and ${settings.randomEnd}`
+                        }
+                      </p>
+                      <p className="text-xs text-secondary-600 mt-1">
+                        <strong>Actual:</strong> {pendingNotifications.length} notification{pendingNotifications.length !== 1 ? 's' : ''} scheduled
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
